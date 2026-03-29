@@ -21,13 +21,13 @@ pip install markitdown-mcp
 To run the MCP server, using STDIO (default) use the following command:
 
 
-```bash	
+```bash
 markitdown-mcp
 ```
 
 To run the MCP server, using Streamable HTTP and SSE use the following command:
 
-```bash	
+```bash
 markitdown-mcp --http --host 127.0.0.1 --port 3001
 ```
 
@@ -93,6 +93,29 @@ If you want to mount a directory, adjust it accordingly:
   }
 }
 ```
+
+## Using an mcp-config.json File for HTTP
+
+If you are running `markitdown-mcp` with Streamable HTTP enabled, for example via:
+
+```bash
+docker compose up --build
+```
+
+you can point MCP clients that support config files at the HTTP endpoint with an `mcp-config.json` file like this:
+
+```json
+{
+  "mcpServers": {
+    "markitdown": {
+      "type": "streamable-http",
+      "url": "http://127.0.0.1:3001/mcp"
+    }
+  }
+}
+```
+
+If you expose the server on a different host or port, update the `url` accordingly.
 
 ## Debugging
 
