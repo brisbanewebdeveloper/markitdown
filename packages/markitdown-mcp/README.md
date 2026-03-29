@@ -82,12 +82,12 @@ If you want to mount a directory, adjust it accordingly:
     "markitdown": {
       "command": "docker",
       "args": [
-	"run",
-	"--rm",
-	"-i",
-	"-v",
-	"/home/user/data:/workdir",
-	"markitdown-mcp:latest"
+        "run",
+        "--rm",
+        "-i",
+        "-v",
+        "/home/user/data:/workdir",
+        "markitdown-mcp:latest"
       ]
     }
   }
