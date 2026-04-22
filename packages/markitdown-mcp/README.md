@@ -10,7 +10,21 @@
 
 The `markitdown-mcp` package provides a lightweight STDIO, Streamable HTTP, and SSE MCP server for calling MarkItDown.
 
-It exposes one tool: `convert_to_markdown(uri)`, where uri can be any `http:`, `https:`, `file:`, or `data:` URI.
+It exposes one tool: `convert_to_markdown(content_base64, filename=None, extension=None, mimetype=None, charset=None, url=None)`.
+
+The client must send the file bytes as a base64-encoded string. The optional metadata fields help MarkItDown infer the correct converter, especially for formats that depend on filename extension or MIME type.
+
+Example tool arguments:
+
+```json
+{
+  "content_base64": "PGh0bWw+PGJvZHk+PGgxPkV4YW1wbGU8L2gxPjwvYm9keT48L2h0bWw+",
+  "filename": "example.html",
+  "mimetype": "text/html",
+  "charset": "utf-8",
+  "url": "https://example.com/example.html"
+}
+```
 
 ## Installation
 
@@ -46,13 +60,8 @@ And run it using:
 ```bash
 docker run -it --rm markitdown-mcp:latest
 ```
-This will be sufficient for remote URIs. To access local files, you need to mount the local directory into the container. For example, if you want to access files in `/home/user/data`, you can run:
 
-```bash
-docker run -it --rm -v /home/user/data:/workdir markitdown-mcp:latest
-```
-
-Once mounted, all files under data will be accessible under `/workdir` in the container. For example, if you have a file `example.txt` in `/home/user/data`, it will be accessible in the container at `/workdir/example.txt`.
+No local directory mount is required for uploaded content. The client sends the file bytes to the MCP server as part of the tool arguments.
 
 ## Accessing from Claude Desktop
 
@@ -71,26 +80,6 @@ Edit it to include the following JSON entry:
         "run",
         "--rm",
         "-i",
-        "markitdown-mcp:latest"
-      ]
-    }
-  }
-}
-```
-
-If you want to mount a directory, adjust it accordingly:
-
-```json
-{
-  "mcpServers": {
-    "markitdown": {
-      "command": "docker",
-      "args": [
-        "run",
-        "--rm",
-        "-i",
-        "-v",
-        "/home/user/data:/workdir",
         "markitdown-mcp:latest"
       ]
     }
@@ -150,11 +139,11 @@ Finally:
 * click the `Tools` tab,
 * click `List Tools`,
 * click `convert_to_markdown`, and
-* run the tool on any valid URI.
+* run the tool with a base64-encoded file payload and any useful metadata.
 
 ## Security Considerations
 
-The server does not support authentication, and runs with the privileges of the user running it. For this reason, when running in SSE or Streamable HTTP mode, the server binds by default to `localhost`. Even still, it is important to recognize that the server can be accessed by any process or users on the same local machine, and that the `convert_to_markdown` tool can be used to read any file that the server's user has access to, or any data from the network. If you require additional security, consider running the server in a sandboxed environment, such as a virtual machine or container, and ensure that the user permissions are properly configured to limit access to sensitive files and network segments. Above all, DO NOT bind the server to other interfaces (non-localhost) unless you understand the security implications of doing so.
+The server does not support authentication, and runs with the privileges of the user running it. For this reason, when running in SSE or Streamable HTTP mode, the server binds by default to `localhost`. Even still, it is important to recognize that the server can be accessed by any process or users on the same local machine, and that the `convert_to_markdown` tool will process arbitrary file content supplied by clients. If you require additional security, consider running the server in a sandboxed environment, such as a virtual machine or container, and ensure that the user permissions are properly configured to limit the impact of processing untrusted files. Above all, DO NOT bind the server to other interfaces (non-localhost) unless you understand the security implications of doing so.
 
 ## Trademarks
 

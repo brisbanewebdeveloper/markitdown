@@ -3,6 +3,7 @@ services:
     image: markitdown-mcp:latest
     build:
       context: ./packages/markitdown-mcp
+    restart: unless-stopped
     command: ["--http", "--host", "0.0.0.0", "--port", "3001"]
     ports:
       - "${MARKITDOWN_PORT:-3001}:3001"

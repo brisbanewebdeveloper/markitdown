@@ -1,6 +1,9 @@
+import base64
+import binascii
 import contextlib
-import sys
+import io
 import os
+import sys
 from collections.abc import AsyncIterator
 from mcp.server.fastmcp import FastMCP
 from starlette.applications import Starlette
@@ -10,7 +13,7 @@ from starlette.routing import Mount, Route
 from starlette.types import Receive, Scope, Send
 from mcp.server import Server
 from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
-from markitdown import MarkItDown
+from markitdown import MarkItDown, StreamInfo
 import uvicorn
 
 # Initialize FastMCP server for MarkItDown (SSE)
@@ -18,9 +21,47 @@ mcp = FastMCP("markitdown")
 
 
 @mcp.tool()
-async def convert_to_markdown(uri: str) -> str:
-    """Convert a resource described by an http:, https:, file: or data: URI to markdown"""
-    return MarkItDown(enable_plugins=check_plugins_enabled()).convert_uri(uri).markdown
+async def convert_to_markdown(
+    content_base64: str,
+    filename: str | None = None,
+    extension: str | None = None,
+    mimetype: str | None = None,
+    charset: str | None = None,
+    url: str | None = None,
+) -> str:
+    """Convert a client-supplied file payload to markdown."""
+    normalized_content = "".join(content_base64.split())
+    if not normalized_content:
+        raise ValueError("content_base64 must not be empty")
+
+    try:
+        payload = base64.b64decode(normalized_content, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError(
+            "content_base64 must be valid base64-encoded data"
+        ) from exc
+
+    if not payload:
+        raise ValueError("content_base64 decoded to an empty payload")
+
+    normalized_extension = extension
+    if normalized_extension is None and filename:
+        normalized_extension = os.path.splitext(filename)[1] or None
+    if normalized_extension and not normalized_extension.startswith("."):
+        normalized_extension = "." + normalized_extension
+
+    stream_info = StreamInfo(
+        mimetype=mimetype,
+        extension=normalized_extension,
+        charset=charset,
+        filename=filename,
+        url=url,
+    )
+
+    return MarkItDown(enable_plugins=check_plugins_enabled()).convert_stream(
+        io.BytesIO(payload),
+        stream_info=stream_info,
+    ).markdown
 
 
 def check_plugins_enabled() -> bool:
